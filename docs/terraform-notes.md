@@ -99,6 +99,123 @@ Bootstrap infrastructure created out-of-band via Azure CLI (since Terraform cann
 
 Terraform configuration updated with `backend "azurerm"` block pointing at this infrastructure. State migrated using `terraform init -migrate-state`. Local state files deleted after successful migration.
 
+## Bootstrap commands (one-time setup)
+
+The following Azure CLI commands create the state backend infrastructure outside of Terraform. Run once per environment.
+
+When reproducing this in a new environment, two values must be customised:
+
+- `<storage-account-name>` — must be globally unique across all of Azure, lowercase letters and numbers only, 3–24 characters.
+- `<owner>` — the identifier recorded in the `owner` tag (your name, team, or similar).
+
+The commands below show the names actually used in this project. Substitute your own where appropriate.
+
+### 1. Confirm the correct subscription is active
+
+```powershell
+az account show
+```
+
+Verify the returned `id` matches the intended subscription before continuing.
+
+### 2. Create the state-backend resource group
+
+```powershell
+az group create `
+  --name rg-terraform-state `
+  --location uksouth `
+  --tags managed_by=manual purpose=terraform-state-backend owner=<owner>
+```
+
+The `managed_by=manual` tag is deliberate: this resource group is explicitly *not* managed by Terraform, and the tag prevents future confusion about why it isn't in any `.tf` file.
+
+### 3. Create the storage account
+
+```powershell
+az storage account create `
+  --name sttfstatesretoolkit `
+  --resource-group rg-terraform-state `
+  --location uksouth `
+  --sku Standard_LRS `
+  --kind StorageV2 `
+  --min-tls-version TLS1_2 `
+  --allow-blob-public-access false `
+  --tags managed_by=manual purpose=terraform-state-backend owner=<owner>
+```
+
+Flag rationale:
+
+- `--sku Standard_LRS` — locally-redundant storage; cheapest tier, sufficient for state in a personal project. Production might use `Standard_GRS` for geo-redundancy.
+- `--kind StorageV2` — modern general-purpose v2 account; v1 is legacy.
+- `--min-tls-version TLS1_2` — refuses connections using older, weaker TLS versions.
+- `--allow-blob-public-access false` — critical for state files; state contains secrets and must never be publicly readable.
+
+### 4. Enable blob versioning and soft delete
+
+```powershell
+az storage account blob-service-properties update `
+  --account-name sttfstatesretoolkit `
+  --resource-group rg-terraform-state `
+  --enable-versioning true `
+  --enable-delete-retention true `
+  --delete-retention-days 7 `
+  --enable-container-delete-retention true `
+  --container-delete-retention-days 7
+```
+
+State files are overwritten on every `terraform apply`. Versioning retains every previous version so corrupted state can be rolled back. Soft delete provides a 7-day recovery window for accidentally deleted blobs and containers.
+
+### 5. Create the blob container
+
+```powershell
+az storage container create `
+  --name tfstate `
+  --account-name sttfstatesretoolkit `
+  --auth-mode login
+```
+
+`--auth-mode login` uses the current Azure AD identity rather than storage account keys. This is the modern, recommended authentication path.
+
+### 6. Grant data plane access to your user
+
+Creating the container via `--auth-mode login` requires the user to have a data-plane role on the storage account. Subscription-level Owner is *not* sufficient for data plane operations — Azure's permission model separates management plane (creating the account) from data plane (reading and writing blobs inside it).
+
+Retrieve the current user's object ID and assign the role, scoped to the single storage account:
+
+```powershell
+$userId = az ad signed-in-user show --query id -o tsv
+
+az role assignment create `
+  --role "Storage Blob Data Contributor" `
+  --assignee $userId `
+  --scope /subscriptions/<subscription-id>/resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/sttfstatesretoolkit
+```
+
+Role assignments take 1–2 minutes to propagate. Verify with:
+
+```powershell
+az storage blob list `
+  --account-name sttfstatesretoolkit `
+  --container-name tfstate `
+  --auth-mode login `
+  --query "[].name"
+```
+
+### 7. Update Terraform configuration and migrate state
+
+Once the bootstrap infrastructure exists, add the `backend "azurerm"` block to `main.tf` referencing the resource names above, then migrate any existing local state:
+
+```powershell
+terraform init -migrate-state
+```
+
+Confirm `yes` when prompted to copy local state into the new backend. After successful migration, delete the local state files:
+
+```powershell
+Remove-Item terraform.tfstate -ErrorAction SilentlyContinue
+Remove-Item terraform.tfstate.backup -ErrorAction SilentlyContinue
+```
+
 ## Design decisions
 
 - **Bootstrap done manually, not via Terraform.** Chicken-and-egg problem: Terraform needs the backend to exist before it can write state to it. Standard pattern in the industry; documented here so anyone reproducing this knows where the bootstrap commands live.
