@@ -8,7 +8,7 @@ After nearly 20 years operating SQL Server estates at enterprise scale, this pro
 
 ## Architecture
 
-> _Architecture diagram to be added in Phase 1_
+> _Architecture diagram to be added during Phase 1._
 
 ## Tech Stack
 
@@ -25,8 +25,8 @@ After nearly 20 years operating SQL Server estates at enterprise scale, this pro
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| 0 | 🟡 In progress | Foundations and tooling setup |
-| 1 | ⬜ Not started | Terraform infrastructure provisioning |
+| 0 | ✅ Complete | Foundations and tooling setup |
+| 1 | 🟡 In progress | Terraform infrastructure provisioning |
 | 2 | ⬜ Not started | Git workflow and CI/CD |
 | 3 | ⬜ Not started | SRE automation scripts |
 | 4 | ⬜ Not started | Observability and SLIs |
@@ -37,13 +37,18 @@ After nearly 20 years operating SQL Server estates at enterprise scale, this pro
 
 ```
 azure-db-sre-toolkit/
-├── terraform/              # Infrastructure as Code
+├── terraform/              # Infrastructure as Code (Phase 1)
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── .terraform.lock.hcl
 ├── scripts/
-│   ├── powershell/         # PowerShell automation scripts
-│   └── python/             # Python automation scripts
+│   ├── powershell/         # PowerShell automation scripts (Phase 3)
+│   └── python/             # Python automation scripts (Phase 3)
 ├── .github/
-│   └── workflows/          # GitHub Actions CI/CD pipelines
-├── docs/                   # Architecture diagrams and design notes
+│   └── workflows/          # GitHub Actions CI/CD pipelines (Phase 2)
+├── docs/
+│   └── terraform-notes.md  # Design decisions and reflections
 ├── README.md
 └── .gitignore
 ```
@@ -60,15 +65,25 @@ azure-db-sre-toolkit/
 
 ## Getting Started
 
-_Setup instructions will be added as the project progresses through Phase 1._
+> _Full setup instructions will be expanded once Phase 1 (infrastructure provisioning) is complete._
+
+**Current state:** Phase 1 in progress. Terraform configuration provisions a single resource group with remote state backed by Azure Storage. Azure SQL Database, Functions, and observability resources will be added during the remainder of Phase 1.
+
+To reproduce the current state:
+
+1. Clone this repository
+2. Authenticate to Azure: `az login`
+3. Bootstrap the remote state backend — see the bootstrap commands documented in [`docs/terraform-notes.md`](docs/terraform-notes.md)
+4. In the `terraform/` folder, copy `terraform.tfvars.example` to `terraform.tfvars` and set the `owner` variable
+5. Run `terraform init`, `terraform plan`, then `terraform apply`
 
 ## Design Decisions
 
-_Key architecture and tooling decisions will be documented here as they're made._
+Key architectural and tooling decisions are documented as they are made in [`docs/terraform-notes.md`](docs/terraform-notes.md). Highlights include the remote state backend design, naming conventions following Microsoft's Cloud Adoption Framework guidance, and the rationale for bootstrap infrastructure being created out-of-band rather than via Terraform.
 
 ## What I Learned
 
-_Lessons, gotchas, and reflections will be captured here throughout the project._
+Reflections and lessons captured per phase in [`docs/terraform-notes.md`](docs/terraform-notes.md). Includes notes on Copilot's contextual blind spots, Azure's data plane vs management plane permission model, and the conceptual shift from infrastructure-as-precious to infrastructure-as-code.
 
 ## License
 
