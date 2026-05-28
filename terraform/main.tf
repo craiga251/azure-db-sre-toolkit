@@ -14,7 +14,6 @@ terraform {
     container_name       = "tfstate"
     key                  = "azure-db-sre-toolkit.tfstate"
   }
-
 }
 
 provider "azurerm" {
@@ -31,4 +30,3 @@ resource "azurerm_resource_group" "main" {
     owner      = var.owner
   }
 }
-
