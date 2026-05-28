@@ -8,6 +8,13 @@ terraform {
       version = "~> 4.0"
     }
   }
+  backend "azurerm" {
+    resource_group_name  = "rg-terraform-state"
+    storage_account_name = "sttfstatesretoolkit"
+    container_name       = "tfstate"
+    key                  = "azure-db-sre-toolkit.tfstate"
+  }
+
 }
 
 provider "azurerm" {
