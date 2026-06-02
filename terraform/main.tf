@@ -30,3 +30,17 @@ resource "azurerm_resource_group" "main" {
     owner      = var.owner
   }
 }
+
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "log-azure-db-sre-toolkit"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+
+  tags = {
+    project    = "azure-db-sre-toolkit"
+    managed_by = "terraform"
+    owner      = var.owner
+  }
+}
