@@ -67,7 +67,7 @@ azure-db-sre-toolkit/
 
 > _Full setup instructions will be expanded once Phase 1 (infrastructure provisioning) is complete._
 
-**Current state:** Phase 1 in progress. Terraform configuration provisions a single resource group with remote state backed by Azure Storage. Azure SQL Database, Functions, and observability resources will be added during the remainder of Phase 1.
+**Current state:** Phase 1 in progress. Terraform configuration provisions a resource group and Log Analytics workspace, with remote state backed by Azure Storage. Azure SQL Database, Functions, and observability resources will be added during the remainder of Phase 1.
 
 To reproduce the current state:
 
@@ -77,13 +77,24 @@ To reproduce the current state:
 4. In the `terraform/` folder, copy `terraform.tfvars.example` to `terraform.tfvars` and set the `owner` variable
 5. Run `terraform init`, `terraform plan`, then `terraform apply`
 
+## Infrastructure Provisioned
+
+The following Azure resources are currently defined in Terraform and deployable in a single `terraform apply`:
+
+| Resource | Name | Purpose |
+|----------|------|---------|
+| Resource Group | `rg-azure-db-sre-toolkit` | Container for all project resources |
+| Log Analytics Workspace | `log-azure-db-sre-toolkit` | Centralised log ingestion and querying platform |
+
+Resources to be added during remainder of Phase 1: Azure SQL Database (serverless), Azure Functions (consumption plan), Storage Account, diagnostic settings.
+
 ## Design Decisions
 
 Key architectural and tooling decisions are documented as they are made in [`docs/terraform-notes.md`](docs/terraform-notes.md). Highlights include the remote state backend design, naming conventions following Microsoft's Cloud Adoption Framework guidance, and the rationale for bootstrap infrastructure being created out-of-band rather than via Terraform.
 
 ## What I Learned
 
-Reflections and lessons captured per phase in [`docs/terraform-notes.md`](docs/terraform-notes.md). Includes notes on Copilot's contextual blind spots, Azure's data plane vs management plane permission model, and the conceptual shift from infrastructure-as-precious to infrastructure-as-code.
+Reflections and lessons captured per phase in [`docs/terraform-notes.md`](docs/terraform-notes.md). Includes notes on Copilot's contextual blind spots, Azure's data plane vs management plane permission model, the conceptual shift from infrastructure-as-precious to infrastructure-as-code, and how implicit resource dependencies drive Terraform's execution order.
 
 ## License
 
