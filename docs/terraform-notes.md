@@ -292,3 +292,65 @@ In the Azure portal the SKU displays as `Pay-as-you-go`, which is the portal lab
 Today was deliberately lighter than Day 3. The resource itself is straightforward — the value was in the concepts it surfaces rather than the complexity of the commands.
 
 The most useful thing to absorb from today: the connection between Day 3 (remote state security) and Day 4 (sensitive values in state). These two days are not independent. The workspace shared keys being stored in state is the concrete example of why the state backend had to be hardened first. The project is being built in dependency order — not just infrastructure dependencies, but security dependencies too.
+
+# Day 6 — Refactor and Tidy
+
+## What was done
+
+Code review and refactor of existing Terraform configuration. No new infrastructure added. The primary change was extracting duplicated tag blocks into a `locals` block — applying the DRY (Don't Repeat Yourself) principle to infrastructure code.
+
+## The `locals` refactor
+
+Before the refactor, both resource blocks contained an identical `tags` block:
+
+```hcl
+tags = {
+  project    = "azure-db-sre-toolkit"
+  managed_by = "terraform"
+  owner      = var.owner
+}
+```
+
+This was replaced with a single `locals` block defining the tags once:
+
+```hcl
+locals {
+  common_tags = {
+    project    = "azure-db-sre-toolkit"
+    managed_by = "terraform"
+    owner      = var.owner
+  }
+}
+```
+
+Each resource now references `tags = local.common_tags` — a single line rather than a repeated four-line block. When new resources are added in Week 3, they pick up the same tags with one line. When the project name changes, it changes in one place.
+
+The plan after the refactor showed `0 to add, 0 to change, 0 to destroy` — confirming the refactor was purely a code change with no infrastructure impact.
+
+## Why DRY matters in IaC
+
+Duplicated configuration is a maintenance liability. In a larger project with dozens of resources, duplicated tag blocks mean: a naming change requires editing every resource, a reviewer has to check every block individually for consistency, and subtle drift between blocks becomes possible and hard to detect. The `locals` pattern eliminates all three risks at zero cost.
+
+The DRY principle applies to infrastructure code exactly as it does to application code. The discipline of spotting and removing duplication before it accumulates is what separates clean, maintainable Terraform from configuration that becomes hard to manage at scale.
+
+## Day 6 reflection
+
+Day 6 reinforced that good engineering isn't just about making things work — it's about making them maintainable. The refactor took ten minutes and produced no visible change in Azure, but it meaningfully improved the quality of the codebase. The habit of reviewing code with fresh eyes before moving on to the next phase is worth keeping throughout the project.
+
+# Week 2 — End of Week Reflection
+
+## What was covered
+
+Week 2 covered the full foundation of Terraform on Azure: core concepts (providers, state, plan vs apply), writing and applying the first configuration, setting up a production-grade remote state backend, adding the Log Analytics workspace, and a refactor pass to tidy and improve the codebase before Week 3.
+
+## Honest reflection
+
+The Terraform commands themselves were more straightforward than expected — the tooling is well-designed and the error messages are generally helpful. The value of the week wasn't in the commands but in understanding *why* each decision was made.
+
+The most important gotcha of the week was the DRY principle — specifically, noticing that duplicated tag blocks across resources would become a maintenance problem at scale, and refactoring to a `locals` block before the pattern embedded itself. The general principle: don't repeat yourself in configuration code any more than in application code. Spot duplication early and remove it before it compounds.
+
+The single thing I could explain in an interview today that I couldn't a week ago: how to build infrastructure on Azure using Terraform — from provider configuration and variable management through to remote state, dependency ordering, and code quality discipline. That's a meaningful shift from theoretical knowledge to hands-on experience.
+
+## Going into Week 3
+
+Week 3 adds the substantive infrastructure: Azure SQL Database (serverless), Azure Functions (consumption plan), a storage account, and diagnostic settings wiring everything into the Log Analytics workspace. The configuration will grow significantly — the discipline established this week (DRY, consistent naming, tagging via locals, clean commit messages) will matter more, not less, as complexity increases.
