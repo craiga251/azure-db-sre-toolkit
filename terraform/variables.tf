@@ -14,3 +14,20 @@ variable "owner" {
   description = "Owner tag value for created resources. Set via terraform.tfvars (gitignored)."
   type        = string
 }
+
+variable "sql_admin_username" {
+  description = "Administrator username for the Azure SQL Server. Set via terraform.tfvars (gitignored)."
+  type        = string
+}
+
+variable "sql_admin_password" {
+  description = "Administrator password for the Azure SQL Server. Set via terraform.tfvars (gitignored)."
+  type        = string
+  sensitive   = true
+}
+
+variable "sql_location" {
+  description = "Azure region for SQL Server resources. May differ from primary location due to regional quota restrictions on free subscriptions."
+  type        = string
+  default     = "eastus"
+}
