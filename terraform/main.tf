@@ -20,15 +20,19 @@ provider "azurerm" {
   features {}
 }
 
-resource "azurerm_resource_group" "main" {
-  name     = var.resource_group_name
-  location = var.location
-
-  tags = {
+locals {
+  common_tags = {
     project    = "azure-db-sre-toolkit"
     managed_by = "terraform"
     owner      = var.owner
   }
+}
+
+resource "azurerm_resource_group" "main" {
+  name     = var.resource_group_name
+  location = var.location
+
+  tags = local.common_tags
 }
 
 resource "azurerm_log_analytics_workspace" "main" {
@@ -38,9 +42,5 @@ resource "azurerm_log_analytics_workspace" "main" {
   sku                 = "PerGB2018"
   retention_in_days   = 30
 
-  tags = {
-    project    = "azure-db-sre-toolkit"
-    managed_by = "terraform"
-    owner      = var.owner
-  }
+  tags = local.common_tags
 }
