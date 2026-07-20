@@ -1,4 +1,7 @@
 # Copy this file to terraform.tfvars and set values appropriately.
 # terraform.tfvars is gitignored to keep personal data out of source control.
 
-owner = "your-name-here"
+
+owner              = "your-name-here"
+sql_admin_username = "sqladmin"
+sql_admin_password = "your-strong-password-here"
